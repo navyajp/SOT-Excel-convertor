@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NSDL Statement Converter</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #0f1f45;
+      --navy-mid: #1b3a6b;
+      --blue: #2563eb;
+      --blue-light: #3b82f6;
+      --accent: #06d6a0;
+      --accent-warm: #f59e0b;
+      --bg: #f0f4ff;
+      --surface: #ffffff;
+      --surface2: #f8faff;
+      --border: #dce6ff;
+      --text: #0f1f45;
+      --text-mid: #4a5f8a;
+      --text-light: #8fa0c0;
+      --error: #ef4444;
+      --success: #10b981;
+      --shadow: 0 4px 24px rgba(15,31,69,0.10);
+      --shadow-lg: 0 8px 48px rgba(15,31,69,0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* BACKGROUND DECORATION */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -200px; right: -200px;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -150px; left: -150px;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(6,214,160,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* NAV */
+    nav {
+      background: var(--navy);
+      padding: 0 2rem;
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky; top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.25);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Space Mono', monospace;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+    .nav-logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--blue), var(--accent));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .nav-badge {
+      background: rgba(6,214,160,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(6,214,160,0.3);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* MAIN */
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 4rem;
+    }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      margin-bottom: 3rem;
+      animation: fadeUp 0.6s ease;
+    }
+    .hero-pill {
+      display: inline-block;
+      background: rgba(37,99,235,0.08);
+      color: var(--blue);
+      border: 1px solid rgba(37,99,235,0.2);
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 1.2rem;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: 2.6rem;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.15;
+      margin-bottom: 0.8rem;
+      letter-spacing: -1px;
+    }
+    h1 span { color: var(--blue); }
+    .hero p {
+      color: var(--text-mid);
+      font-size: 1.05rem;
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* UPLOAD CARD */
+    .card {
+      background: var(--surface);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 2.5rem;
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.6s ease 0.1s both;
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      background: var(--surface2);
+      position: relative;
+      overflow: hidden;
+    }
+    .upload-zone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(37,99,235,0.03), rgba(6,214,160,0.03));
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--blue);
+      background: rgba(37,99,235,0.03);
+    }
+    .upload-zone:hover::before, .upload-zone.drag-over::before {
+      opacity: 1;
+    }
+    .upload-zone.drag-over {
+      border-color: var(--accent);
+      transform: scale(1.01);
+    }
+
+    .upload-icon {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, rgba(37,99,235,0.1), rgba(6,214,160,0.1));
+      border-radius: 16px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      margin-bottom: 1rem;
+    }
+    .upload-zone h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    .upload-zone p {
+      color: var(--text-light);
+      font-size: 0.9rem;
+    }
+    .upload-zone strong { color: var(--blue); }
+
+    #fileInput { display: none; }
+
+    /* FILE SELECTED STATE */
+    .file-selected {
+      display: none;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+      background: rgba(6,214,160,0.06);
+      border: 1px solid rgba(6,214,160,0.2);
+      border-radius: 12px;
+      margin-top: 1rem;
+    }
+    .file-selected.visible { display: flex; }
+    .file-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, #ef4444, #f97316);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .file-size { color: var(--text-light); font-size: 0.82rem; margin-top: 2px; }
+    .file-remove {
+      background: none; border: none;
+      color: var(--text-light);
+      cursor: pointer; font-size: 1.2rem;
+      padding: 4px; border-radius: 6px;
+      transition: color 0.2s;
+    }
+    .file-remove:hover { color: var(--error); }
+
+    /* COLUMNS PREVIEW */
+    .columns-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.6rem;
+      margin-top: 1.5rem;
+    }
+    .col-chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-mid);
+      text-align: center;
+      display: flex; align-items: center; gap: 5px; justify-content: center;
+    }
+    .col-chip::before { content: '⊞'; color: var(--blue); }
+
+    /* CONVERT BUTTON */
+    .btn-convert {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--navy-mid), var(--blue));
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      margin-top: 1.5rem;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+      letter-spacing: 0.2px;
+    }
+    .btn-convert::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1));
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .btn-convert:hover:not(:disabled)::after { opacity: 1; }
+    .btn-convert:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(37,99,235,0.35); }
+    .btn-convert:active:not(:disabled) { transform: translateY(0); }
+    .btn-convert:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* PROGRESS */
+    .progress-wrap {
+      display: none;
+      margin-top: 1.5rem;
+    }
+    .progress-wrap.visible { display: block; }
+    .progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 0.85rem; color: var(--text-mid);
+      margin-bottom: 0.5rem;
+    }
+    .progress-bar-bg {
+      height: 8px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), var(--accent));
+      border-radius: 99px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+    .progress-steps {
+      display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;
+    }
+    .progress-step {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.78rem;
+      color: var(--text-light);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .progress-step.active { border-color: var(--blue); color: var(--blue); background: rgba(37,99,235,0.06); }
+    .progress-step.done { border-color: var(--success); color: var(--success); background: rgba(16,185,129,0.06); }
+
+    /* RESULT CARD */
+    .result-card {
+      display: none;
+      animation: fadeUp 0.4s ease;
+    }
+    .result-card.visible { display: block; }
+
+    .result-header {
+      display: flex; align-items: center; gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .result-icon {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, var(--success), #34d399);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .result-title { font-size: 1.2rem; font-weight: 700; }
+    .result-sub { color: var(--text-mid); font-size: 0.88rem; margin-top: 2px; }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem;
+      text-align: center;
+    }
+    .stat-number {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-label { font-size: 0.8rem; color: var(--text-light); font-weight: 500; }
+
+    .btn-download {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--success), #059669);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-download:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(16,185,129,0.35); }
+
+    .btn-reset {
+      width: 100%;
+      padding: 0.8rem;
+      background: none;
+      color: var(--text-mid);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      margin-top: 0.75rem;
+      transition: all 0.2s;
+    }
+    .btn-reset:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* PREVIEW TABLE */
+    .preview-section {
+      display: none;
+      animation: fadeUp 0.4s ease;
+    }
+    .preview-section.visible { display: block; }
+    .preview-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .preview-header h3 { font-size: 1.05rem; font-weight: 600; }
+    .preview-badge {
+      background: rgba(37,99,235,0.1);
+      color: var(--blue);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    th {
+      background: var(--navy);
+      color: #fff;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+      white-space: nowrap;
+      font-size: 0.78rem;
+      letter-spacing: 0.3px;
+    }
+    td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      white-space: nowrap;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: var(--surface2); }
+    tr:hover td { background: rgba(37,99,235,0.04); }
+    td.num { text-align: right; font-family: 'Space Mono', monospace; font-size: 0.78rem; }
+    td.credit-cell { color: var(--success); font-weight: 600; }
+    td.debit-cell { color: var(--error); font-weight: 600; }
+
+    /* ERROR */
+    .error-box {
+      display: none;
+      background: rgba(239,68,68,0.06);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      margin-top: 1rem;
+      color: var(--error);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .error-box.visible { display: flex; align-items: center; gap: 8px; }
+
+    /* HOW IT WORKS */
+    .how-it-works {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      animation: fadeUp 0.6s ease 0.2s both;
+    }
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.4rem;
+      text-align: center;
+    }
+    .step-num {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--navy-mid), var(--blue));
+      color: #fff;
+      border-radius: 10px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: 'Space Mono', monospace;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.8rem;
+    }
+    .step-card h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .step-card p { font-size: 0.8rem; color: var(--text-mid); line-height: 1.5; }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+
+    /* SERVER URL CONFIG */
+    .server-config {
+      background: rgba(15,31,69,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.85rem;
+    }
+    .server-config label { color: var(--text-mid); font-weight: 500; white-space: nowrap; }
+    .server-config input {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 5px 10px;
+      font-size: 0.85rem;
+      font-family: 'Space Mono', monospace;
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+    }
+    .server-config input:focus { border-color: var(--blue); }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 1.8rem; }
+      .columns-grid { grid-template-columns: repeat(2, 1fr); }
+      .stats-row { grid-template-columns: 1fr; }
+      .how-it-works { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-icon">📊</div>
+    NSDL Converter
+  </div>
+  <div class="nav-badge">ICICI NSDL</div>
+</nav>
+
+<main>
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-pill">Demat Statement Parser</div>
+    <h1>Convert NSDL Statements<br>to <span>Excel</span> Instantly</h1>
+    <p>Upload your ICICI NSDL transaction statement PDF and get a clean, downloadable Excel file in seconds.</p>
+  </div>
+
+  <!-- UPLOAD CARD -->
+  <div class="card">
+    <!-- Server Config -->
+    <div class="server-config">
+      <label>🔗 API Server:</label>
+      <input type="text" id="serverUrl" value="http://localhost:5000" placeholder="http://localhost:5000" />
+    </div>
+
+    <!-- Upload Zone -->
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📄</div>
+      <h3>Drop your NSDL PDF here</h3>
+      <p>or <strong>click to browse</strong> — ICICI NSDL transaction statements only</p>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf" />
+
+    <!-- File Selected -->
+    <div class="file-selected" id="fileSelected">
+      <div class="file-icon">📕</div>
+      <div class="file-info">
+        <div class="file-name" id="fileName">file.pdf</div>
+        <div class="file-size" id="fileSize">—</div>
+      </div>
+      <button class="file-remove" onclick="removeFile()" title="Remove">✕</button>
+    </div>
+
+    <!-- Columns Preview -->
+    <div class="columns-grid">
+      <div class="col-chip">Client Name</div>
+      <div class="col-chip">Security Name</div>
+      <div class="col-chip">Transaction Date</div>
+      <div class="col-chip">Transaction No.</div>
+      <div class="col-chip">Opening Balance</div>
+      <div class="col-chip">Credit</div>
+      <div class="col-chip">Debit</div>
+      <div class="col-chip">Closing Balance</div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="errorBox">⚠ <span id="errorText"></span></div>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label">
+        <span id="progressLabel">Processing…</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-steps">
+        <div class="progress-step" id="step1">📤 Uploading</div>
+        <div class="progress-step" id="step2">🔍 Parsing PDF</div>
+        <div class="progress-step" id="step3">📊 Building Excel</div>
+        <div class="progress-step" id="step4">✅ Ready</div>
+      </div>
+    </div>
+
+    <button class="btn-convert" id="convertBtn" onclick="convertFile()" disabled>
+      Convert to Excel →
+    </button>
+  </div>
+
+  <!-- RESULT CARD -->
+  <div class="card result-card" id="resultCard">
+    <div class="result-header">
+      <div class="result-icon">✅</div>
+      <div>
+        <div class="result-title">Conversion Complete!</div>
+        <div class="result-sub" id="clientNameDisplay">Processing done</div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-number" id="statTotal">—</div>
+        <div class="stat-label">Total Transactions</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number" id="statSecurities">—</div>
+        <div class="stat-label">Unique Securities</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number" id="statClient">—</div>
+        <div class="stat-label">Client Name</div>
+      </div>
+    </div>
+    <button class="btn-download" id="downloadBtn" onclick="downloadExcel()">
+      ⬇ Download Excel File
+    </button>
+    <button class="btn-reset" onclick="resetAll()">↩ Convert Another File</button>
+  </div>
+
+  <!-- PREVIEW TABLE -->
+  <div class="card preview-section" id="previewSection">
+    <div class="preview-header">
+      <h3>Preview (first 50 rows)</h3>
+      <div class="preview-badge" id="previewBadge">0 rows</div>
+    </div>
+    <div class="table-wrap">
+      <table id="previewTable">
+        <thead>
+          <tr>
+            <th>Client Name</th>
+            <th>Security Name</th>
+            <th>Date</th>
+            <th>Transaction No.</th>
+            <th>Opening Bal.</th>
+            <th>Credit</th>
+            <th>Debit</th>
+            <th>Closing Bal.</th>
+          </tr>
+        </thead>
+        <tbody id="previewBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="how-it-works">
+    <div class="step-card">
+      <div class="step-num">01</div>
+      <h4>Upload PDF</h4>
+      <p>Upload your ICICI NSDL transaction statement PDF — any size supported.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">02</div>
+      <h4>Auto-Parse</h4>
+      <p>Backend extracts all transactions, securities, dates, and quantities automatically.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">03</div>
+      <h4>Download Excel</h4>
+      <p>Get a clean .xlsx with all 8 columns, summary sheet, and professional formatting.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+  let selectedFile = null;
+  let previewData = null;
+  let excelBlob = null;
+  let excelFilename = 'NSDL_Transactions.xlsx';
+
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('fileInput');
+
+  // Drag and drop
+  uploadZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+  });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f && f.name.toLowerCase().endsWith('.pdf')) setFile(f);
+    else showError('Please drop a PDF file.');
+  });
+
+  fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) setFile(e.target.files[0]);
+  });
+
+  function setFile(file) {
+    selectedFile = file;
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileSize').textContent = formatBytes(file.size);
+    document.getElementById('fileSelected').classList.add('visible');
+    document.getElementById('convertBtn').disabled = false;
+    hideError();
+    // Reset previous results
+    document.getElementById('resultCard').classList.remove('visible');
+    document.getElementById('previewSection').classList.remove('visible');
+    excelBlob = null;
+  }
+
+  function removeFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    document.getElementById('fileSelected').classList.remove('visible');
+    document.getElementById('convertBtn').disabled = true;
+    hideError();
+    document.getElementById('progressWrap').classList.remove('visible');
+  }
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/1024/1024).toFixed(1) + ' MB';
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('errorBox');
+    document.getElementById('errorText').textContent = msg;
+    box.classList.add('visible');
+  }
+  function hideError() {
+    document.getElementById('errorBox').classList.remove('visible');
+  }
+
+  function setProgress(pct, label) {
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+    document.getElementById('progressLabel').textContent = label;
+  }
+
+  function setStep(n) {
+    for (let i = 1; i <= 4; i++) {
+      const s = document.getElementById('step' + i);
+      s.classList.remove('active', 'done');
+      if (i < n) s.classList.add('done');
+      else if (i === n) s.classList.add('active');
+    }
+  }
+
+  async function convertFile() {
+    if (!selectedFile) return;
+    hideError();
+
+    const serverUrl = document.getElementById('serverUrl').value.trim().replace(/\/$/, '');
+    const convertBtn = document.getElementById('convertBtn');
+    convertBtn.disabled = true;
+    convertBtn.textContent = '⏳ Processing…';
+
+    document.getElementById('progressWrap').classList.add('visible');
+    setProgress(5, 'Uploading PDF…');
+    setStep(1);
+
+    try {
+      // Step 1: Preview
+      const formData1 = new FormData();
+      formData1.append('file', selectedFile);
+      setProgress(20, 'Parsing transactions…');
+      setStep(2);
+
+      const previewRes = await fetch(serverUrl + '/preview', {
+        method: 'POST',
+        body: formData1
+      });
+
+      if (!previewRes.ok) {
+        const err = await previewRes.json();
+        throw new Error(err.error || 'Server error during parsing');
+      }
+
+      previewData = await previewRes.json();
+      setProgress(55, 'Building Excel file…');
+      setStep(3);
+
+      // Step 2: Convert
+      const formData2 = new FormData();
+      formData2.append('file', selectedFile);
+
+      const convertRes = await fetch(serverUrl + '/convert', {
+        method: 'POST',
+        body: formData2
+      });
+
+      if (!convertRes.ok) {
+        const err = await convertRes.json();
+        throw new Error(err.error || 'Conversion failed');
+      }
+
+      excelBlob = await convertRes.blob();
+      const disposition = convertRes.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      if (match) excelFilename = match[1];
+
+      setProgress(100, 'Done!');
+      setStep(4);
+
+      // Show results
+      showResults(previewData);
+      showPreview(previewData);
+
+      convertBtn.textContent = '✅ Converted!';
+    } catch (err) {
+      showError(err.message || 'Something went wrong. Make sure the backend is running.');
+      convertBtn.disabled = false;
+      convertBtn.textContent = 'Convert to Excel →';
+      document.getElementById('progressWrap').classList.remove('visible');
+    }
+  }
+
+  function showResults(data) {
+    document.getElementById('statTotal').textContent = data.total_records.toLocaleString();
+    document.getElementById('statSecurities').textContent = data.unique_securities.toLocaleString();
+    const cn = data.client_name || 'N/A';
+    document.getElementById('statClient').textContent = cn.split(' ').slice(0, 2).join(' ');
+    document.getElementById('clientNameDisplay').textContent = `Client: ${cn}`;
+    document.getElementById('resultCard').classList.add('visible');
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function showPreview(data) {
+    if (!data.preview || !data.preview.length) return;
+    const tbody = document.getElementById('previewBody');
+    tbody.innerHTML = '';
+    data.preview.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.client_name}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis" title="${r.security_name}">${r.security_name}</td>
+        <td>${r.transaction_date}</td>
+        <td style="font-family:'Space Mono',monospace;font-size:0.75rem">${r.transaction_number}</td>
+        <td class="num">${r.opening_balance.toLocaleString()}</td>
+        <td class="num ${r.credit > 0 ? 'credit-cell' : ''}">${r.credit > 0 ? r.credit.toLocaleString() : '—'}</td>
+        <td class="num ${r.debit > 0 ? 'debit-cell' : ''}">${r.debit > 0 ? r.debit.toLocaleString() : '—'}</td>
+        <td class="num">${r.closing_balance.toLocaleString()}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('previewBadge').textContent = `${data.preview.length} of ${data.total_records} rows`;
+    document.getElementById('previewSection').classList.add('visible');
+  }
+
+  function downloadExcel() {
+    if (!excelBlob) return;
+    const url = URL.createObjectURL(excelBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = excelFilename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function resetAll() {
+    removeFile();
+    selectedFile = null;
+    excelBlob = null;
+    previewData = null;
+    document.getElementById('resultCard').classList.remove('visible');
+    document.getElementById('previewSection').classList.remove('visible');
+    document.getElementById('progressWrap').classList.remove('visible');
+    document.getElementById('convertBtn').textContent = 'Convert to Excel →';
+    document.getElementById('convertBtn').disabled = true;
+    document.getElementById('previewBody').innerHTML = '';
+  }
+</script>
+</body>
+</html>
