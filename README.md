@@ -118,3 +118,17 @@ Health check — returns `{"status": "ok"}`.
 ## License
 
 MIT
+
+
+## Deploy on Railway
+
+1. Push this repository to GitHub.
+2. In Railway, create a **New Project** and select this GitHub repository.
+3. Railway will detect the `Procfile` and run:
+   - `web: gunicorn --chdir backend app:app`
+4. No custom start command is needed. Railway injects `PORT`, and the app reads it automatically.
+5. After deploy, open the generated Railway URL. The frontend and API are served from the same app.
+
+### Environment variables (optional)
+
+- `FLASK_DEBUG=false` (recommended for production)

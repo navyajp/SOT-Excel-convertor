@@ -562,7 +562,7 @@
     <!-- Server Config -->
     <div class="server-config">
       <label>🔗 API Server:</label>
-      <input type="text" id="serverUrl" value="http://localhost:5000" placeholder="http://localhost:5000" />
+      <input type="text" id="serverUrl" value="" placeholder="Leave blank to use this website" />
     </div>
 
     <!-- Upload Zone -->
@@ -777,7 +777,8 @@
     if (!selectedFile) return;
     hideError();
 
-    const serverUrl = document.getElementById('serverUrl').value.trim().replace(/\/$/, '');
+    const customServerUrl = document.getElementById('serverUrl').value.trim();
+    const serverUrl = (customServerUrl || window.location.origin).replace(/\/$/, '');
     const convertBtn = document.getElementById('convertBtn');
     convertBtn.disabled = true;
     convertBtn.textContent = '⏳ Processing…';
